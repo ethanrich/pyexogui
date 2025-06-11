@@ -17,8 +17,7 @@ slower than their current speed of 50 PWM units per second
 2) Low difficulty - Make the Connection button text readable and also 
 make the button change color depending on the connection state
 
-3) Medium difficulty - Upgrade the GUI code to automatically update the 
-Actuator Position values, replacing the current button
+3) Medium difficulty - Upgrade the GUI code to automatically update the Actuator Position values
 
 4) High difficulty - Upgrade the communication backend to log all GUI and 
 Arduino traffic to a log file with the date, time, who made the request, 

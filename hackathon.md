@@ -3,8 +3,11 @@ Exoskeleton Control GUI Hackathon
 Try to complete as many of these tasks as you can. You have two options to 
 complete a task:
 
-1) Actually update the Python code from the three provided files
-2) Provide a short (<2 minute) explanation of what needs to be done
+1) Write some code and explain it
+2) Write some plain English "pseudocode" and explain it
+
+You are encouraged to only use LLMs as a reference, and not to actually do the
+tasks for you. 
 
 Hackathon Tasks:
 

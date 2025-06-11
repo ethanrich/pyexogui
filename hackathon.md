@@ -23,7 +23,8 @@ make the button change color depending on the connection state
 
 ### 3) Medium difficulty
 Upgrade the GUI code to automatically update 
-the Actuator Position values
+the Actuator Position values. Hint: Similar code to what you 
+need is used in comm_backend.py
 
 ### 4) High difficulty
 In the communication backend, implement a system to log all GUI and 

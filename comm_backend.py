@@ -4,6 +4,8 @@ import queue
 import threading
 from functools import wraps
 import re
+import logging
+from datetime import datetime
 
 from mock_arduino import MockSerial
 
@@ -63,7 +65,43 @@ class CommandSender:
         self.position_update_interval = 0.1  # How often to request positions (seconds)
         self.last_position_request_time = 0
         self.use_mock = use_mock
+
+        self._setup_logger()
     
+    def _setup_logger(self):
+        """Sets up a file logger for communication traffic."""
+        # Get a logger instance
+        self.logger = logging.getLogger("TrafficLogger")
+        self.logger.setLevel(logging.INFO)
+
+        # Prevent adding multiple handlers if this method is called more than once
+        if not self.logger.handlers:
+            # Create a handler to write logs to a file
+            log_file = "communication.log"
+            file_handler = logging.FileHandler(log_file)
+            
+            # Create a formatter to make the logs readable and add it to the handler
+            # Format: YYYY-MM-DD HH:MM:SS - SENDER  -> RECEIVER | DATA: ...
+            formatter = logging.Formatter('%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+            file_handler.setFormatter(formatter)
+            
+            # Add the configured handler to the logger
+            self.logger.addHandler(file_handler)
+
+    def _log_traffic(self, source, destination, data):
+        """
+        Formats and logs a communication event.
+        
+        Args:
+            source (str): The origin of the data (e.g., 'GUI').
+            destination (str): The recipient of the data (e.g., 'Arduino').
+            data (str): The data that was transmitted.
+        """
+        if self.logger:
+            # Use padding to align the '->' for easier reading in the log file
+            message = f"{source:<7} -> {destination:<7} | DATA: {data.strip()}"
+            self.logger.info(message)
+
     def parse_position_data(self, data_string):
         """
         Parse position data from the device
@@ -111,7 +149,10 @@ class CommandSender:
                 self.serial_port.reset_input_buffer()
                 
                 # Send position request
-                self.serial_port.write(b"GET_POS\n")
+                command = "GET_POS\n"
+                # write log
+                self._log_traffic("GUI", "Arduino", command)
+                self.serial_port.write(command.encode())
                 self.serial_port.flush()
                 
                 # Wait for response (with timeout)
@@ -119,7 +160,9 @@ class CommandSender:
                 while time.time() - start_time < 0.5:  # 500ms timeout
                     if self.serial_port.in_waiting:
                         line = self.serial_port.readline().decode().strip()
-                        
+                        # write log
+                        self._log_traffic("Arduino", "GUI", line)
+
                         # Skip acknowledgment messages
                         if line.startswith("ACK:") or line.startswith("ERR:") or line.startswith("STATUS:"):
                             continue
@@ -195,6 +238,8 @@ class CommandSender:
         while time.time() - start_time < 2:
             if ser.in_waiting:
                 line = ser.readline().decode().strip()
+                # write log
+                self._log_traffic("Arduino", "GUI", line)
                 if line == "READY":
                     ready_received = True
                     print("Arduino ready signal received")
@@ -343,6 +388,8 @@ class CommandSender:
         # Clear input buffer before sending command
         self.serial_port.reset_input_buffer()
         
+        # write log
+        self._log_traffic("GUI", "Arduino", command)
         # Send command
         self.serial_port.write(command.encode())
         self.serial_port.flush()
@@ -352,6 +399,8 @@ class CommandSender:
         while time.time() - start_time < 0.5:  # 500ms timeout for ACK
             if self.serial_port.in_waiting:
                 line = self.serial_port.readline().decode().strip()
+                # write log
+                self._log_traffic("Arduino", "GUI", line)
                 if line.startswith("ACK:"):
                     return True
                 elif line.startswith("ERR:"):

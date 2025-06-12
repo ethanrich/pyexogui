@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+import threading
+import time
 from comm_backend import CommandSender
 
 class ExoControlGUI:
@@ -16,7 +18,17 @@ class ExoControlGUI:
         
         # Build the GUI
         self.create_gui()
+
+        # Set up the thread stuff
+        self.update_thread = threading.Thread(target=self.update_positions_forever, daemon=True)
+        self.stop_updating_event = threading.Event()
         
+    def update_positions_forever(self):
+        while not self.stop_updating_event.is_set():
+            self.update_positions()
+            # wait some time before updating again
+            time.sleep(0.250)
+    
     def create_gui(self):
         """Create all the GUI elements"""
         
@@ -142,12 +154,18 @@ class ExoControlGUI:
                 self.enable_controls(True)
                 self.update_status("Connected!")
                 
-                # Get initial positions
-                self.update_positions()
+                # Start updating thread
+                self.stop_updating_event.clear()
+                self.update_thread.start()
             else:
                 # Connection failed
                 self.update_status("Connection failed!")
         else:
+            # Stop updating thread
+            self.stop_updating_event.set()
+            if self.update_thread and self.update_thread.is_alive():
+                self.update_thread.join()
+
             # Disconnect
             self.controller.disconnect()
             self.is_connected = False
